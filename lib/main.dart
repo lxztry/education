@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
-import 'screens/practice_screen.dart';
 import 'screens/challenge_screen.dart';
 import 'screens/wrong_book_screen.dart';
 import 'screens/settings_screen.dart';
@@ -22,7 +21,6 @@ class MathTrainerApp extends StatelessWidget {
       ),
       home: const HomeScreen(),
       routes: {
-        '/practice': (context) => const PracticeScreen(),
         '/challenge': (context) => const ChallengeScreen(),
         '/wrongbook': (context) => const WrongBookScreen(),
         '/settings': (context) => const SettingsScreen(),

@@ -1,0 +1,1 @@
+ build\\web\\manifest.json:  D:\\code\\opencodeproj\\skill2skill\\education\\web\\index.html D:\\code\\opencodeproj\\skill2skill\\education\\web\\manifest.json
