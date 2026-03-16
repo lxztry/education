@@ -1,17 +1,23 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/problem.dart';
+import '../services/storage_service.dart';
 
 class PracticeScreen extends StatefulWidget {
   final int difficulty;
   final int problemCount;
   final List<OperationType> operations;
+  final bool isChallenge;
+  final int? challengeLevel;
 
   const PracticeScreen({
     super.key,
     required this.difficulty,
     required this.problemCount,
     required this.operations,
+    this.isChallenge = false,
+    this.challengeLevel,
   });
 
   @override
@@ -65,8 +71,17 @@ class _PracticeScreenState extends State<PracticeScreen> {
       return;
     }
 
+    final isCorrect = _session.currentProblem?.checkAnswer(answer) ?? false;
     _session.answer(answer);
-    _lastAnswerCorrect = _session.currentProblem?.checkAnswer(answer) ?? false;
+    _lastAnswerCorrect = isCorrect;
+
+    if (!isCorrect && _session.currentProblem != null) {
+      StorageService.addWrongProblem(_session.currentProblem!);
+    }
+
+    if (StorageService.getVibrationEnabled()) {
+      HapticFeedback.lightImpact();
+    }
 
     setState(() {
       _showFeedback = true;
@@ -87,10 +102,21 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
   void _showResult() {
     _timer?.cancel();
+    final accuracy = _session.problems.isEmpty
+        ? 0.0
+        : _session.correctCount / _session.problems.length * 100;
+    
+    StorageService.incrementTodayCount();
+    
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => ResultScreen(session: _session, seconds: _seconds),
+        builder: (_) => ResultScreen(
+          session: _session, 
+          seconds: _seconds,
+          isChallenge: widget.isChallenge,
+          challengeLevel: widget.challengeLevel,
+        ),
       ),
     );
   }
@@ -220,11 +246,15 @@ class _PracticeScreenState extends State<PracticeScreen> {
 class ResultScreen extends StatelessWidget {
   final PracticeSession session;
   final int seconds;
+  final bool isChallenge;
+  final int? challengeLevel;
 
   const ResultScreen({
     super.key,
     required this.session,
     required this.seconds,
+    this.isChallenge = false,
+    this.challengeLevel,
   });
 
   @override
@@ -232,6 +262,13 @@ class ResultScreen extends StatelessWidget {
     final accuracy = session.problems.isEmpty
         ? 0.0
         : session.correctCount / session.problems.length * 100;
+    
+    String title;
+    if (isChallenge) {
+      title = accuracy >= 80 ? '闯关成功！' : '闯关失败';
+    } else {
+      title = accuracy >= 80 ? '太棒了！' : '继续加油！';
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -253,12 +290,22 @@ class ResultScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                accuracy >= 80 ? '太棒了！' : '继续加油！',
+                title,
                 style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              if (isChallenge && accuracy >= 80) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '第 $challengeLevel 关通关成功！',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.orange[700],
+                  ),
+                ),
+              ],
               const SizedBox(height: 40),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,

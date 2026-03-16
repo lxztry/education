@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'practice_screen.dart';
 import '../models/problem.dart';
+import '../services/storage_service.dart';
 
 class ChallengeScreen extends StatefulWidget {
   const ChallengeScreen({super.key});
@@ -10,9 +11,16 @@ class ChallengeScreen extends StatefulWidget {
 }
 
 class _ChallengeScreenState extends State<ChallengeScreen> {
-  int _currentLevel = 1;
+  late int _currentLevel;
   final int _maxLevel = 10;
-  int _highScore = 0;
+  late int _highScore;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentLevel = StorageService.getChallengeLevel();
+    _highScore = StorageService.getHighScore();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -162,19 +170,24 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           difficulty: difficulty,
           problemCount: problemCount,
           operations: operations,
+          isChallenge: true,
+          challengeLevel: level,
         ),
       ),
     ).then((result) {
-      setState(() {
-        if (result == true) {
+      final accuracy = result as double? ?? 0;
+      if (accuracy >= 80) {
+        setState(() {
           if (level == _currentLevel && _currentLevel < _maxLevel) {
             _currentLevel++;
+            StorageService.setChallengeLevel(_currentLevel);
           }
           if (level > _highScore) {
             _highScore = level;
+            StorageService.setHighScore(_highScore);
           }
-        }
-      });
+        });
+      }
     });
   }
 }

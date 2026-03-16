@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/problem.dart';
+import '../services/storage_service.dart';
 
 class WrongBookScreen extends StatefulWidget {
   const WrongBookScreen({super.key});
@@ -9,7 +10,19 @@ class WrongBookScreen extends StatefulWidget {
 }
 
 class _WrongBookScreenState extends State<WrongBookScreen> {
-  final List<MathProblem> _wrongProblems = [];
+  late List<MathProblem> _wrongProblems;
+
+  @override
+  void initState() {
+    super.initState();
+    _wrongProblems = StorageService.getWrongProblems();
+  }
+
+  void _refreshProblems() {
+    setState(() {
+      _wrongProblems = StorageService.getWrongProblems();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,6 +31,13 @@ class _WrongBookScreenState extends State<WrongBookScreen> {
         title: const Text('错题本'),
         backgroundColor: Colors.red,
         foregroundColor: Colors.white,
+        actions: [
+          if (_wrongProblems.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _refreshProblems,
+            ),
+        ],
       ),
       body: _wrongProblems.isEmpty
           ? Center(
@@ -93,10 +113,9 @@ class _WrongBookScreenState extends State<WrongBookScreen> {
             ),
       floatingActionButton: _wrongProblems.isNotEmpty
           ? FloatingActionButton.extended(
-              onPressed: () {
-                setState(() {
-                  _wrongProblems.clear();
-                });
+              onPressed: () async {
+                await StorageService.clearWrongProblems();
+                _refreshProblems();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('已清空错题本')),
                 );

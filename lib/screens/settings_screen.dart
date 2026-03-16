@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/storage_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -8,29 +9,58 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _soundEnabled = true;
-  bool _vibrationEnabled = true;
-  bool _showTimer = true;
-  int _dailyGoal = 20;
+  late bool _soundEnabled;
+  late bool _vibrationEnabled;
+  late bool _showTimer;
+  late int _dailyGoal;
+  late bool _darkMode;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  void _loadSettings() {
+    _soundEnabled = StorageService.getSoundEnabled();
+    _vibrationEnabled = StorageService.getVibrationEnabled();
+    _showTimer = StorageService.getShowTimer();
+    _dailyGoal = StorageService.getDailyGoal();
+    _darkMode = StorageService.getDarkMode();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('设置'),
-        backgroundColor: Colors.grey[700],
+        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
       ),
       body: ListView(
         children: [
           const SizedBox(height: 20),
+          _buildSectionHeader('外观'),
+          ListTile(
+            leading: const Icon(Icons.dark_mode),
+            title: const Text('深色模式'),
+            trailing: Switch(
+              value: _darkMode,
+              onChanged: (value) async {
+                await StorageService.setDarkMode(value);
+                setState(() => _darkMode = value);
+              },
+            ),
+          ),
+          const Divider(),
           _buildSectionHeader('练习设置'),
           ListTile(
             leading: const Icon(Icons.timer),
             title: const Text('显示计时器'),
             trailing: Switch(
               value: _showTimer,
-              onChanged: (value) {
+              onChanged: (value) async {
+                await StorageService.setShowTimer(value);
                 setState(() => _showTimer = value);
               },
             ),
@@ -40,7 +70,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('声音提示'),
             trailing: Switch(
               value: _soundEnabled,
-              onChanged: (value) {
+              onChanged: (value) async {
+                await StorageService.setSoundEnabled(value);
                 setState(() => _soundEnabled = value);
               },
             ),
@@ -50,7 +81,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('震动反馈'),
             trailing: Switch(
               value: _vibrationEnabled,
-              onChanged: (value) {
+              onChanged: (value) async {
+                await StorageService.setVibrationEnabled(value);
                 setState(() => _vibrationEnabled = value);
               },
             ),
@@ -63,6 +95,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: Text('$_dailyGoal 题/天'),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: _showDailyGoalDialog,
+          ),
+          ListTile(
+            leading: const Icon(Icons.today),
+            title: const Text('今日练习'),
+            subtitle: Text('${StorageService.getTodayCount()} 题'),
           ),
           const Divider(),
           _buildSectionHeader('关于'),
@@ -91,7 +128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Text(
         title,
         style: TextStyle(
-          color: Colors.blue[700],
+          color: Theme.of(context).colorScheme.primary,
           fontWeight: FontWeight.bold,
           fontSize: 14,
         ),
@@ -112,8 +149,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: Text('$goal 题'),
                 value: goal,
                 groupValue: _dailyGoal,
-                onChanged: (value) {
-                  setState(() => _dailyGoal = value!);
+                onChanged: (value) async {
+                  await StorageService.setDailyGoal(value!);
+                  setState(() => _dailyGoal = value);
                   Navigator.pop(context);
                 },
               );
